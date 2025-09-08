@@ -1,0 +1,16 @@
+static/images/
+static/uploads/
+static/models/
+static/results/
+annotations/
+datasets/
+runs/
+logs/
+.vscode
+.ipynb_checkpoints
+__pycache__
+model_archive/dataset
+model_archive/mlruns
+model_archive/model_archive
+model_archive/runs
+model_archive/test_preds
