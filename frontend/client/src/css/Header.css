@@ -1,0 +1,42 @@
+.navbar {
+  display: flex;
+  justify-content: space-between; /* 左右分散 */
+  align-items: center;            /* 垂直置中 */
+  background-color: #343a40;      /* 參考你的深色背景 */
+  padding: 0.5rem 1rem;
+  color: white;
+}
+
+/* 左邊首頁 */
+.nav-left a {
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  margin-right: 1rem;
+}
+
+/* 右邊區域 */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* admin 與 登出 按鈕之間的間隔 */
+}
+
+.nav-right .user {
+  font-weight: 500;
+}
+
+.nav-right .logout {
+  background-color: #dc3545; /* 紅色 */
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.nav-right .logout:hover {
+  background-color: #bb2d3b;
+}

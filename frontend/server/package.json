@@ -1,0 +1,20 @@
+{
+  "name": "oral-cancer-app-server",
+  "version": "1.0.0",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "oral-cancer-app-react": "file:.."
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

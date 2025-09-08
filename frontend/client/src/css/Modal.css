@@ -1,0 +1,329 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal h3 {
+  margin-top: 0;
+  color: #d9534f;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modal-actions button:first-child {
+  background: #ccc;
+}
+
+.modal-actions button:last-child {
+  background: #3aa3d1;
+  color: #fff;
+}
+
+.toggle-title {
+    margin: 0;
+    font-weight: 600;
+    color: #343a40;
+    display: flex;
+    align-items: center;
+    transition: color 0.3s;
+}
+
+/* 主要區域 */
+.main-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 頁面 Header */
+.main-layout .header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem;
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+/* 主內容 */
+.main-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* 標題 */
+.main-content h2 {
+  margin-bottom: 1.5rem;
+  color: #343a40;
+}
+
+/* 紀錄卡片連結 */
+.record-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 卡片 */
+.record-card {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.record-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+/* icon 區塊 */
+.record-card .icon {
+  width: 48px;
+  height: 48px;
+  background-color: #e9ecef;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.2rem;
+  color: #198754; /* Bootstrap success 綠 */
+}
+
+/* 文字資訊 */
+.record-card .record-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.record-card .record-info .patient_id {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #212529;
+}
+
+.record-card .record-info .date {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* 新增紀錄按鈕 */
+.main-content .btn-success {
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* Modal 框架 */
+.modal-dialog {
+  margin: auto;
+}
+
+.modal-content {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Modal body */
+.modal-body {
+  padding: 1.5rem 2rem;
+  background: #fdfdfd;
+}
+
+/* 表單標籤 */
+.form-label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* 輸入框 */
+.form-control {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+}
+
+/* focus 狀態 */
+.form-control:focus {
+  border-color: #0d6efd;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+}
+
+/* textarea 高度 */
+textarea.form-control {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* 圖片上傳區 */
+.image-upload {
+  margin: 1rem 0;
+}
+
+.image-upload img {
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.image-upload img:hover {
+  border-color: #0d6efd;
+  transform: scale(1.05);
+}
+
+.image-upload button {
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #0d6efd;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+.image-upload button:hover {
+  background-color: #0b5ed7;
+}
+
+/* 下方操作按鈕區（辨識 & 查看） */
+#infer, #check_result {
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.8rem 0;
+  transition: all 0.2s ease-in-out;
+}
+
+#infer {
+  background: linear-gradient(135deg, #198754, #20c997);
+  border: none;
+  color: white;
+}
+
+#infer:hover {
+  background: linear-gradient(135deg, #157347, #198754);
+}
+
+#check_result {
+  background: linear-gradient(135deg, #6c757d, #adb5bd);
+  border: none;
+  color: white;
+}
+
+#check_result:hover {
+  background: linear-gradient(135deg, #495057, #6c757d);
+}
+
+/* Footer */
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  border-radius: 0 0 16px 16px;
+}
+
+.modal-footer .btn {
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  transition: transform 0.15s ease-in-out;
+}
+
+.modal-footer .btn:hover {
+  transform: translateY(-2px);
+}
+
+/* 按鈕微調 */
+.btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border: none;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border: none;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+}
+
+/* 動畫效果 */
+@keyframes fadeInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

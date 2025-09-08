@@ -1,0 +1,21 @@
+{
+  "name": "oral-cancer-app-react",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev-all": "concurrently \"npm run dev\" \"cd ../backend && python app.py\""
+  },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-qr-reader": "^3.0.0-beta-1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "vite": "^7.1.4"
+  }
+}
