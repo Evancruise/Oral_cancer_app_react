@@ -20,6 +20,10 @@ export default function ReportResult({show, patient_id, onClose}) {
 
     console.log("patient_id:", patient_id);
 
+    function export_report() {
+        
+    }
+
     useEffect(() => {
         fetch(`/retrieve_result_imgs/${patient_id}`)
         .then(res => res.json())
@@ -108,6 +112,9 @@ export default function ReportResult({show, patient_id, onClose}) {
                 <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={onClose}>
                     回上一頁
+                    </button>
+                    <button className="btn btn-primary" onClick={export_report}>
+                    匯出診斷報告
                     </button>
                 </div>
             </div>

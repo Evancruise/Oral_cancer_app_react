@@ -15,11 +15,16 @@ export default defineConfig({
       "/login": "http://localhost:8080",
       "/current_username": "http://localhost:8080",
       "/record": "http://localhost:8080",
+      "/all_record": "http://localhost:8080",
       "/modify_record": "http://localhost:8080",
       "/apply_change_password": "http://localhost:8080",
       "/apply_reset_password": "http://localhost:8080",
       "/rebindpage": "http://localhost:8080",
-
+      
+      "/export_data": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
       "/rebind-qr": {
         target: "http://localhost:8080",
         changeOrigin: true,

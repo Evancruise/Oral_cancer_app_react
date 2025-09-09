@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useLocation } from "react";
 import Modal from "./showModal.jsx";
+import ProgessModal from './progressModal.jsx';
 import { useNavigate } from "react-router-dom";
 import '../css/App.css'
 
-export default function FormModal({ show, onClose, onSubmit, onCheckResult, recordContent }) {
+export default function FormModal({ show, onClose, onSubmit, onCheckResult, recordContent, newPatiendId }) {
 
     const parts = [
         ["1", "上牙齦"],
@@ -18,19 +19,20 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
 
     const action = recordContent ? "edit" : "add";
 
-    const [previews, setPreviews] = useState({});
-    const [showFormModal, setShowFormModal] = useState(false);
+    const [preview, setPreviews] = useState({});
+    const [previewsUrl, setPreviewsUrl] = useState({});
     const [showModal, setShowModal] = useState(false);
-    const [showResultModal, setShowResultModal] = useState(false);
+    const [showProgressModal, setShowProgressModal] = useState(false);
     const [modalConfig, setModalConfig] = useState({ title: "", message: "" });  
     const [formData, setFormData] = useState({
-        patient_id: "" || recordContent.patient_id,
+        patient_id: "" || recordContent.patient_id || newPatiendId,
         name: "" || recordContent.name,
         gender: "" || recordContent.gender,
         age: "" || recordContent.age,
         notes: "" || recordContent.notes,
         file: "",
-        code: ""
+        code: "",
+        all_imgs: ""
     });
 
     const navigate = useNavigate();
@@ -41,18 +43,21 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
         fetch(`/upload_imgs/${recordContent.patient_id}`)
         .then(res => res.json())
         .then(data => {
-            console.log(data);
+            console.log("data.url:", data.url);
 
             if (data.exist === "yes") {
-                const newPreviews = {};
-                for (let i = 0; i < data.url.length; i++) {
-                    const code = String(i + 1);   // 確保和 parts 的 code ("1" ~ "8") 一致
-                    newPreviews[code] = data.url[i];
+                if (action == "edit") {
+                  const newPreviews = {};
+                  for (let i = 0; i < data.url.length; i++) {
+                      const code = String(i + 1);   // 確保和 parts 的 code ("1" ~ "8") 一致
+                      newPreviews[`img${code}`] = data.url[i];
+                  }
+                  console.log("newPreviews:", newPreviews);
+                  setPreviewsUrl(newPreviews);  // ✅ 正確更新
                 }
-                setPreviews(newPreviews);  // ✅ 正確更新
             }
 
-            console.log("previews:", previews);
+            console.log("previewsUrl:", previewsUrl);
         })
         .catch(err => console.error("Fetch /upload_imgs 失敗:", err));
     }, []);
@@ -63,6 +68,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
     };
 
     const uploadImg = async (e, code) => {
+        console.log("e.target:", e.target);
         const file = e.target.files[0];
 
         console.log(file);
@@ -72,7 +78,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
             reader.onload = (ev) => {
                 setPreviews((prev) => ({
                     ...prev,
-                    [code]: ev.target.result, // 存成 base64
+                    [`img${code}`]: ev.target.result, // 存成 base64
                 }));
             };
             reader.readAsDataURL(file);
@@ -93,9 +99,9 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
             const data = await res.json();
             
             if (data.url) {
-                setPreviews((prev) => ({
+                setPreviewsUrl((prev) => ({
                     ...prev,
-                    [code]: data.url,
+                    [`img${code}`]: data.url,
                 }));
             } else {
                 setModalConfig({
@@ -115,6 +121,17 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
         document.getElementById(`upload_${code}_2`).innerText = "已上傳";
     };
 
+    const startInference = (e, formData) => {
+        e.preventDefault();
+
+        setShowProgressModal(true);
+
+        setModalConfig({
+            title: "進行辨識訊息",
+            message: "正在進行辨識，請稍後"
+        })
+    }
+
     function chunkArray(array, size) {
         const result = [];
         for (let i = 0; i < array.length; i += size) {
@@ -124,6 +141,9 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
     }
 
     const handleSave = (action, e) => {
+        e.preventDefault();
+
+        console.log("previewsUrl:", previewsUrl);
         if (!formData.patient_id || !formData.name || !formData.gender || !formData.age) {
             setModalConfig({
                 title: "錯誤訊息",
@@ -133,6 +153,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
             return;
         }
         formData["action"] = action;
+        formData["all_imgs"] = previewsUrl;
         console.log(formData);
         onSubmit(formData);
         onClose(); // 關閉
@@ -161,7 +182,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                       name="patient_id"
                       className="form-control"
                       placeholder="請輸入病歷號 (ex: 00001)"
-                      value={formData.patient_id ?? ""}
+                      value={formData.patient_id ?? newPatiendId}
                       onChange={handleChange}
                     />
                     </label>
@@ -234,9 +255,9 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                                       row.map(([code, label]) => (
                                           <div key={code} style={{ width: "140px", textAlign: "center" }}>
                                               <img 
-                                                  src={previews[code] || `/assets/guide/${code}.png`}
+                                                  src={previewsUrl[`img${code}`] || `/assets/guide/${code}.png`}
                                                   alt={label}
-                                                  style={{ width: "100%", borderRadius: "6px", marginBottom: "5px", border: previews[code] ? "2px solid #198754" : "2px solid transparent" }}
+                                                  style={{ width: "100%", borderRadius: "6px", marginBottom: "5px", border: previewsUrl[`img${code}`] ? "2px solid #198754" : "2px solid transparent" }}
                                                   id={`preview_${code}`}
                                               />
                                               <input 
@@ -267,7 +288,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <button type="submit" id="infer" className="btn btn-secondary btn-lg" style={{ width: "48%" }}>
+                  <button type="button" id="infer" className="btn btn-secondary btn-lg" style={{ width: "48%" }} onClick={ (e) => startInference(e, formData) }>
                       <i className="fas fa-camera-retro"></i>開始辨識
                   </button>
                   <button 
@@ -307,6 +328,13 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
               message={modalConfig.message}
               onClose={() => {setShowModal(false);}}
             />
+
+        {showProgressModal && <ProgessModal
+              show={showProgressModal}
+              title={modalConfig.title}
+              message={modalConfig.message}
+              onClose={() => {setShowProgressModal(false);}}
+            />}
         </>
     );
 }

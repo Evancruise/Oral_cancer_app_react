@@ -24,6 +24,7 @@ export default function HistoryPage() {
         .then((res) => res.json())
         .then((data) => {
             setRecords(data.grouped_records || {});
+            setPatientId(data.new_patient_id);
         })
         .catch((err) => {
             console.error("Fetch /record 失敗:", err);
@@ -112,6 +113,7 @@ export default function HistoryPage() {
                 onSubmit={handleSubmitForm}
                 onCheckResult={onCheckResult}
                 recordContent={formConfig}
+                newPatiendId={patientId}
             />}
 
             {!showForm && !showResult && <button className="btn btn-success mb-3" onClick={() => setShowForm(true)}>

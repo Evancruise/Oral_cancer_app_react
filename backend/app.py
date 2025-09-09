@@ -4,18 +4,21 @@ from collections import defaultdict
 import os, io, base64, uuid, time
 import qrcode
 import datetime
+from datetime import date
 import jwt
 import requests
 import sqlite3
 from flask_cors import CORS
 from zoneinfo import ZoneInfo
+import pandas as pd
 from model_archive.func_db import init_db
 
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__, static_folder="../frontend/dist", static_url_path="/")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "1234")  # session 需要
-CORS(app, supports_credentials=True)
+# CORS(app, supports_credentials=True)
+CORS(app)
 
 DB_PATH = os.environ.get("USER_ID", "user.db")
 USER_ID = os.environ.get("USER_ID", "")
@@ -32,8 +35,6 @@ new_patient_id = "0001"
 
 UPLOAD_FOLDER = os.path.join(app.root_path, "tmp", "uploads")
 RESULT_FOLDER = os.path.join(app.root_path, "tmp", "results")
-
-active_tokens = {}
 
 print("UPLOAD_FOLDER:", UPLOAD_FOLDER)
 
@@ -89,7 +90,7 @@ def get_username():
         return jsonify({"username": None, "cur_state": "deactivated"})
     return jsonify({"username": session["username"], "cur_state": session["cur_state"]})
 
-# API 範例
+# 登入頁面
 @app.route("/login_redirect", methods=['POST'])
 def login_redirect():
     data = request.get_json()
@@ -169,61 +170,14 @@ def login_api():
         "session_id": session_id
     })
 
+# 登入首頁頁面
 @app.route("/home_page")
 def home_page():
     name = session["name"]
     username = session["username"]
     return {"name": name, "username": username}
 
-def datetime_convert(stimestamp, display_style="date"):
-    dt_naive = datetime.datetime.strptime(stimestamp, "%Y-%m-%d %H:%M:%S")
-    dt_utc = dt_naive.replace(tzinfo=ZoneInfo("Asia/Taipei"))
-    dt = dt_utc.astimezone(ZoneInfo(TIMEZONE))
-
-    weekday_str = dt.strftime("%A")
-    weekday_map = {
-        'Monday': '一',
-        'Tuesday': '二',
-        'Wednesday': '三',
-        'Thursday': '四',
-        'Friday': '五',
-        'Saturday': '六',
-        'Sunday': '日',
-    }
-    chinese_weekday = weekday_map.get(weekday_str, '')
-
-    if display_style == "date":
-        datetime_str = dt.strftime("%Y-%m-%d")  # 精準到秒
-        date_display = f"{datetime_str}（{chinese_weekday}）"
-    elif display_style == "sec":
-        datetime_str_prefix = dt.strftime("%Y-%m-%d")
-        datetime_str_suffix = dt.strftime("%H:%M:%S")
-        date_display = f"{datetime_str_prefix}（{chinese_weekday}）{datetime_str_suffix}"
-
-    return date_display
-
-def retrieve_priority(username):
-
-    username = session["username"]
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM users WHERE username=?", (username, ))
-    row = cursor.fetchone()
-    
-    if row is None:
-    # 沒有找到這個 user
-        priority = 0   # 或者給個預設值，例如 0
-    else:
-        priority = row["priority"] if row["priority"] is not None else 0
-
-    conn.commit()
-    conn.close()
-
-    return int(priority)
-
+# 個人病歷紀錄頁面
 @app.route("/record", methods=["GET"])
 def record():
     conn = sqlite3.connect(DB_PATH)
@@ -291,8 +245,13 @@ def record():
 @app.route("/modify_record", methods=["POST"])
 def modify_record():
 
+    print("modify_record entry point", flush=True)
+
     form = request.get_json()
     action = form["action"]
+    imgs_list = form["all_imgs"]
+
+    print("imgs_list:", imgs_list, ", length:", len(imgs_list), flush=True)
     
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -313,6 +272,7 @@ def modify_record():
                 )
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
             """, (form['name'], form['gender'], int(form['age']), form['patient_id'], form['notes'], "not_started", 0,))
+            conn.commit()
         else:
             cursor.execute("""
                 INSERT INTO records (
@@ -320,7 +280,8 @@ def modify_record():
                 )
                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
             """, (form['name'], form['gender'], int(form['age']), form['patient_id'], "not_started", 0,))
-            
+            conn.commit()
+
     elif action == "edit":
 
         if not existing:
@@ -333,12 +294,14 @@ def modify_record():
                 SET name=?, gender=?, age=?, notes=?, last_timestamp=CURRENT_TIMESTAMP
                 WHERE patient_id=?
             """, (form['name'], form['gender'], int(form['age']), form['notes'], form['patient_id'],))
+            conn.commit()
         else:
             cursor.execute("""
                 UPDATE records
                 SET name=?, gender=?, age=?, last_timestamp=CURRENT_TIMESTAMP
                 WHERE patient_id=?
             """, (form['name'], form['gender'], int(form['age']), form['patient_id'],))
+            conn.commit()
 
     elif action == "remove":
         cursor.execute("DELETE FROM records WHERE patient_id = ?", (form['patient_id'],))     
@@ -350,13 +313,92 @@ def modify_record():
         if row:
             return jsonify({"status": "failed", "message": "delete failed", "redirect": "record"})
 
-    conn.commit()
+    print("len(imgs_list):", len(imgs_list), flush=True)
+    if len(imgs_list) == 8:
+        print("update records imgs list", flush=True)
+        cursor.execute("""
+            UPDATE records
+            SET img1=?, img2=?, img3=?, img4=?, img5=?, img6=?, img7=?, img8=?
+            WHERE patient_id=?
+        """, (imgs_list['img1'], imgs_list['img2'], imgs_list['img3'], imgs_list['img4'], 
+              imgs_list['img5'], imgs_list['img6'], imgs_list['img7'], imgs_list['img8'], form['patient_id'], ))
+        conn.commit()
+
+        # 模擬測試結果圖
+        cursor.execute("""
+            UPDATE records
+            SET img1_result=?, img2_result=?, img3_result=?, img4_result=?, img5_result=?, img6_result=?, img7_result=?, img8_result=?
+            WHERE patient_id=?
+        """, (imgs_list['img1'], imgs_list['img2'], imgs_list['img3'], imgs_list['img4'], 
+              imgs_list['img5'], imgs_list['img6'], imgs_list['img7'], imgs_list['img8'], form['patient_id'], ))
+        conn.commit()
+
     conn.close()
 
     check_db_table()
 
     return jsonify({"status": "ok", "redirect": "record", "action": action})
 
+# 病歷紀錄管理頁面
+@app.route("/all_record")
+def all_record():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM records ORDER BY last_timestamp DESC")
+    rows = cursor.fetchall()
+
+    record_dict = defaultdict(list)
+
+    for row in rows:
+        
+        current_table = {
+            'case': row['patient_id'],
+            'created': row['start_timestamp'],
+            'uploaded': row['last_timestamp'],
+            'user': row['name'],
+            'status': row['status'],
+            'notes': row['notes'],
+            'category': "green",
+            'count': sum([1 for i in range(8) if row['img' + str(i+1) + '_result']]),
+            'img_names': [row['img' + str(i+1) + '_result'] for i in range(8)]
+        }
+
+        print(current_table, flush=True)
+
+        record_dict[row['start_timestamp']] = current_table
+    
+    conn.commit()
+    conn.close()
+
+    today = date.today()
+    today_timestamp = today.strftime("%Y/%m/%d")
+
+    # render_template("liff_all_records.html", grouped_records=history_list, priority=retrieve_priority(username), today_date=today_timestamp + "~" + today_timestamp)
+    return jsonify({"grouped_records": record_dict, "default_date": today_timestamp + "~" + today_timestamp})
+
+@app.route("/export_data", methods=["POST"])
+def export_data():
+    records = request.json  # React 傳進來的 data
+    for item in records:
+        item["img_names"] = ", ".join([i for i in item["img_names"] if i])
+
+    df = pd.DataFrame(records)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Records")
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="records.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    
+# 快速密碼變更頁面
 @app.route("/apply_change_password", methods=["POST"])
 def apply_change_password():
     form = request.get_json()
@@ -373,6 +415,7 @@ def apply_change_password():
     session["password"] = new_password
     return jsonify({"status": "ok", "message": ""})
 
+# 重設密碼頁面
 @app.route("/apply_reset_password", methods=["POST"])
 def apply_reset_password():
     form = request.get_json()
@@ -386,38 +429,7 @@ def apply_reset_password():
     session["password"] = new_password
     return jsonify({"status": "ok", "message": ""})
 
-@app.route('/qr-login/<session_id>', methods=['GET', 'POST'])
-def qr_login(session_id):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE qr_session_id=?", (session_id, ))
-    user = cursor.fetchone()
-
-    if not user:
-        return "QR code 無效/已過期", 400
-    
-    user_id = user[0]
-    session["user_id"] = user_id
-    # socketio.emit("qr_bound", {"msg": "QR綁定完成"}, room=f"user_{user_id}")
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"redirect": "/"})
-
-def send_email_with_token(email, token):
-    link = f"/verify-qr?token={token}"
-    data = {
-        "from": SOURCE_EMAIL_ADDRESS,
-        "to": [EMAIL_ADDRESS],
-        "subject": "QR Code Login Link",
-        "html": f"<p>請點擊以下連結以完成綁定: </p><a href='{link}'>{link}</a>"
-    }
-    headers = {"Authorization": f"Bearer {RESEND_API_KEY}"}
-    requests.post("https://api.resend.com/emails", json=data, headers=headers)
-    # resend.Emails.send(data)
-
+# 重新綁定頁面
 @app.route("/rebind-qr")
 def rebind_qr():
 
@@ -465,6 +477,39 @@ def verify_qr():
     conn.commit()
     conn.close()
     return jsonify({"success": True, "message": "QR 驗證成功！"})
+
+@app.route('/qr-login/<session_id>', methods=['GET', 'POST'])
+def qr_login(session_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE qr_session_id=?", (session_id, ))
+    user = cursor.fetchone()
+
+    if not user:
+        return "QR code 無效/已過期", 400
+    
+    user_id = user[0]
+    session["user_id"] = user_id
+    # socketio.emit("qr_bound", {"msg": "QR綁定完成"}, room=f"user_{user_id}")
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"redirect": "/"})
+
+# 其他基本路由
+def send_email_with_token(email, token):
+    link = f"/verify-qr?token={token}"
+    data = {
+        "from": SOURCE_EMAIL_ADDRESS,
+        "to": [EMAIL_ADDRESS],
+        "subject": "QR Code Login Link",
+        "html": f"<p>請點擊以下連結以完成綁定: </p><a href='{link}'>{link}</a>"
+    }
+    headers = {"Authorization": f"Bearer {RESEND_API_KEY}"}
+    requests.post("https://api.resend.com/emails", json=data, headers=headers)
+    # resend.Emails.send(data)
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
@@ -532,6 +577,55 @@ def retrieve_result_imgs(patient_id):
         result_color.append('green')
 
     return jsonify({"exist": "yes", "url": url_dict, "color": result_color})
+
+def datetime_convert(stimestamp, display_style="date"):
+    dt_naive = datetime.datetime.strptime(stimestamp, "%Y-%m-%d %H:%M:%S")
+    dt_utc = dt_naive.replace(tzinfo=ZoneInfo("Asia/Taipei"))
+    dt = dt_utc.astimezone(ZoneInfo(TIMEZONE))
+
+    weekday_str = dt.strftime("%A")
+    weekday_map = {
+        'Monday': '一',
+        'Tuesday': '二',
+        'Wednesday': '三',
+        'Thursday': '四',
+        'Friday': '五',
+        'Saturday': '六',
+        'Sunday': '日',
+    }
+    chinese_weekday = weekday_map.get(weekday_str, '')
+
+    if display_style == "date":
+        datetime_str = dt.strftime("%Y-%m-%d")  # 精準到秒
+        date_display = f"{datetime_str}（{chinese_weekday}）"
+    elif display_style == "sec":
+        datetime_str_prefix = dt.strftime("%Y-%m-%d")
+        datetime_str_suffix = dt.strftime("%H:%M:%S")
+        date_display = f"{datetime_str_prefix}（{chinese_weekday}）{datetime_str_suffix}"
+
+    return date_display
+
+def retrieve_priority(username):
+
+    username = session["username"]
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE username=?", (username, ))
+    row = cursor.fetchone()
+    
+    if row is None:
+    # 沒有找到這個 user
+        priority = 0   # 或者給個預設值，例如 0
+    else:
+        priority = row["priority"] if row["priority"] is not None else 0
+
+    conn.commit()
+    conn.close()
+
+    return int(priority)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)

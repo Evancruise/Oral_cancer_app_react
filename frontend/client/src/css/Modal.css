@@ -227,6 +227,22 @@ textarea.form-control {
   background-color: #0b5ed7;
 }
 
+.progress-container {
+  width: 100%;
+  background-color: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 25px;
+  background-color: #3aa3d1;
+  color: white;
+  text-align: center;
+  line-height: 25px;
+  transition: width 0.3s ease;
+}
+
 /* 下方操作按鈕區（辨識 & 查看） */
 #infer, #check_result {
   border-radius: 12px;
