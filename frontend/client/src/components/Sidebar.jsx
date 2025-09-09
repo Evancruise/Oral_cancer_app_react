@@ -29,9 +29,9 @@ const Sidebar = ({ priority }) => {
         { path: '/homepage', icon: faHome, label: '首頁', exact: true },
         { path: '/record', icon: faUser, label: '個人病歷紀錄' },
         // { path: '/annotate', icon: faHistory, label: '標記平台' },
-        { path: '/all_record', icon: faCalendar, label: '所有病歷紀錄', show: priority === 1 },
+        { path: '/all_record', icon: faCalendar, label: '病歷紀錄管理', show: priority === 1 },
         { path: '/all_account', icon: faHistory, label: '帳號管理', show: priority === 1 },
-        { path: '/discard_record', icon: faTrash, label: '垃圾桶' },
+        { path: '/cabin', icon: faTrash, label: '垃圾桶' },
         { path: '/change_password', icon: faKey, label: '快速密碼變更' },
         { path: '/rebindpage', icon: faLink, label: '重新綁定' },
     ];

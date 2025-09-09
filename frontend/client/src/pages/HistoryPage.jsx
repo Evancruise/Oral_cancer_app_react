@@ -4,6 +4,7 @@ import Header from '../components/Header.jsx';
 import FormModal from '../components/FormModal.jsx'
 import Modal from "../components/showModal.jsx";
 import ReportResult from "../components/ReportResult.jsx";
+import InnerHeader from '../components/InnerHeader.jsx';
 import '../css/Table.css'
 
 const USER_PRIORITY = 1;
@@ -87,6 +88,7 @@ export default function HistoryPage() {
         <div className="app-layout">
           <Header title="歷史紀錄"/>
           <div className="main-content">
+            <InnerHeader/>
             {!showResult && !showForm && Object.entries(records).flatMap(([date, recList]) =>
               recList.map((rec, idx) => (
                 <div className="record-link"

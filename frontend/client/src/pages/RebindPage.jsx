@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import Header from "../components/Header.jsx";
 import { QrReader } from "react-qr-reader";
+import InnerHeader from "../components/InnerHeader.jsx";
 
 const USER_PRIORITY = 1;
 
@@ -49,12 +50,9 @@ export default function RebindPage() {
       <div className="app-layout">
         <Header title="重新綁定 QR Code" />
         <div className="main-content">
+          <InnerHeader/>
           <div className="rebind-pwd-container" style={{ textAlign: "center" }}>
             {/* 電腦版：顯示 QR Code */}
-            <button onClick={reloadQR} style={{ marginBottom: "1rem" }}>
-              🔄 重新生成 QR code
-            </button>
-
             <div className="form-group">
               <img src={qrSrc} alt="QR Code" style={{ width: "250px" }} />
               <div
@@ -66,6 +64,9 @@ export default function RebindPage() {
               >
                 下次刷新倒數：{countdown} 秒
               </div>
+              <button onClick={reloadQR} style={{ marginBottom: "1rem" }}>
+                🔄 重新生成 QR code
+              </button>
             </div>
 
             {/* 手機版：掃描 QR Code */}

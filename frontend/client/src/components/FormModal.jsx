@@ -161,7 +161,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                       name="patient_id"
                       className="form-control"
                       placeholder="請輸入病歷號 (ex: 00001)"
-                      value={formData.patient_id}
+                      value={formData.patient_id ?? ""}
                       onChange={handleChange}
                     />
                     </label>
@@ -173,7 +173,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                       name="name"
                       className="form-control"
                       placeholder="請輸入姓名"
-                      value={formData.name}
+                      value={formData.name ?? ""}
                       onChange={handleChange}
                     />
                     </label>
@@ -185,7 +185,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                       name="gender"
                       className="form-control"
                       placeholder="請輸入性別"
-                      value={formData.gender}
+                      value={formData.gender ?? ""}
                       onChange={handleChange}
                     />
                     </label>
@@ -197,7 +197,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                       name="age"
                       className="form-control"
                       placeholder="請輸入年齡"
-                      value={formData.age}
+                      value={formData.age ?? ""}
                       onChange={handleChange}
                     />
                     </label>
@@ -208,7 +208,7 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                       name="notes"
                       className="form-control"
                       placeholder="可選填"
-                      value={formData.notes}
+                      value={formData.notes ?? ""}
                       onChange={handleChange}
                     />
                     </label>

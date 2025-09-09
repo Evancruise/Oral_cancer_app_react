@@ -14,11 +14,10 @@ from model_archive.func_db import init_db
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__, static_folder="../frontend/dist", static_url_path="/")
-app.secret_key = os.getenv("FLASK_SECRET_KEY")  # session 需要
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "1234")  # session 需要
 CORS(app, supports_credentials=True)
 
 DB_PATH = os.environ.get("USER_ID", "user.db")
-init_db(DB_PATH)
 USER_ID = os.environ.get("USER_ID", "")
 USERNAME = os.environ.get("USERNAME", "")
 PASSWORD = os.environ.get("PASSWORD", "")
@@ -125,7 +124,7 @@ def login_redirect():
             conn.close()
 
             return {"status": "success", "message": "none", "redirect": "homepage"}
-        elif password == session["password"]:
+        elif "password" in session and password == session["password"]:
             new_session_id = str(uuid.uuid4())
             session["user_id"] = new_session_id
 
@@ -307,24 +306,39 @@ def modify_record():
             print("已存在這個 patient_id，請確認是否重複新增")
             return jsonify({"status": "failed", "message": "patient id existed", "redirect": "record"})
         
-        cursor.execute("""
-            INSERT INTO records (
-                name, gender, age, patient_id, notes, start_timestamp, last_timestamp, status, progress
-            )
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
-        """, (form['name'], form['gender'], int(form['age']), form['patient_id'], form['notes'], "not_started", 0,))
-
+        if "notes" in form:
+            cursor.execute("""
+                INSERT INTO records (
+                    name, gender, age, patient_id, notes, start_timestamp, last_timestamp, status, progress
+                )
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
+            """, (form['name'], form['gender'], int(form['age']), form['patient_id'], form['notes'], "not_started", 0,))
+        else:
+            cursor.execute("""
+                INSERT INTO records (
+                    name, gender, age, patient_id, start_timestamp, last_timestamp, status, progress
+                )
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
+            """, (form['name'], form['gender'], int(form['age']), form['patient_id'], "not_started", 0,))
+            
     elif action == "edit":
 
         if not existing:
             print("已存在這個 patient_id，請確認是否重複新增")
             return jsonify({"status": "failed", "message": "patient id not existed", "redirect": "record"})
 
-        cursor.execute("""
+        if "notes" in form:
+            cursor.execute("""
                 UPDATE records
                 SET name=?, gender=?, age=?, notes=?, last_timestamp=CURRENT_TIMESTAMP
                 WHERE patient_id=?
             """, (form['name'], form['gender'], int(form['age']), form['notes'], form['patient_id'],))
+        else:
+            cursor.execute("""
+                UPDATE records
+                SET name=?, gender=?, age=?, last_timestamp=CURRENT_TIMESTAMP
+                WHERE patient_id=?
+            """, (form['name'], form['gender'], int(form['age']), form['patient_id'],))
 
     elif action == "remove":
         cursor.execute("DELETE FROM records WHERE patient_id = ?", (form['patient_id'],))     

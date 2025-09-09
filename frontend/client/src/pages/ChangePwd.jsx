@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Modal from '../components/showModal';
 import '../css/App.css'
+import InnerHeader from '../components/InnerHeader';
 
 const USER_PRIORITY = 1;
 
@@ -59,6 +60,7 @@ export default function ChangePwd() {
             <div className="app-layout">
                 <Header title="歷史紀錄"/>
                 <div className="main-content">
+                    <InnerHeader/>
                     <div className="change-pwd-container">
                         <form onSubmit={apply_change_pwd}>
                             <div className="form-group">
