@@ -66,13 +66,7 @@ function LoginPage() {
           <a href="/reset_password"> 忘記密碼? </a>
 
           <div className="footer">
-            <a
-              href="#"
-              style={{ textDecoration: "none", fontWeight: 800, color: "#3aa3d1" }}
-            >
-              Mi-tech
-            </a>{" "}
-            Copyright © 2019
+              <a href="#" style={{ textDecoration: "none", fontWeight: "800", color: "#3aa3d1" }}>Mi-tech</a> Copyright © 2019
           </div>
       </div>
 

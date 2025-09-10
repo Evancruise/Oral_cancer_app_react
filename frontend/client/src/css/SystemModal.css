@@ -1,0 +1,47 @@
+/* 標籤與輸入框的整體樣式 */
+.setting-label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+}
+
+/* input-group 內的輸入框大小 */
+.setting-label .form-control {
+  max-width: 150px;
+}
+
+/* 單位樣式 */
+.setting-label .input-group-text {
+  background-color: #f8f9fa;
+  font-weight: 500;
+}
+
+/* 主項目 (大標題) */
+.toggle-title {
+  font-size: 1.2rem;   /* 大一點 */
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.config-section .toggle-title {
+  font-size: 1rem;   /* 大一點 */
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* 子項目容器 */
+.config-subitems {
+  margin-left: 1.5rem;  /* 往右縮排 */
+  padding-left: 1rem;
+}
+
+/* 子項目文字 */
+.config-subitems .form-label {
+  font-size: 0.8rem;  /* 小一點 */
+  font-weight: 500;
+  color: #444;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import Header from '../components/Header.jsx';
 import FormModal from '../components/FormModal.jsx'
@@ -63,7 +63,7 @@ export default function HistoryPage() {
             fetch("/record") // 確保 session cookie 帶上
             .then((res) => res.json())
             .then((data) => {
-                console.log("retrieved grouped dict:", data.grouped_records)
+                console.log("retrieved grouped dict:", data.grouped_records);
                 setRecords(data.grouped_records || {});
             })
             .catch((err) => {
@@ -95,25 +95,25 @@ export default function HistoryPage() {
                 <div className="record-link"
                     key={`${date}-${rec.patient_id}-${idx}`}
                     onClick={(e) => {e.preventDefault(); setShowForm(true); setFormConfig(rec); console.log(formConfig);}}>
-                <div className={`record-card ${date}-${idx}`}>
-                    <div className="icon" id={`icon-${rec.patient_id}`}>
-                        <i className={`fas fa-camera`}></i>
+                    <div className={`record-card ${date}-${idx}`}>
+                        <div className="icon" id={`icon-${rec.patient_id}`}>
+                            <i className={`fas fa-camera`}></i>
+                        </div>
+                        <div className="record-info">
+                            <div className="patient_id">{ rec.patient_id }</div>
+                            <div className="date">{ date }</div>
+                        </div>
                     </div>
-                    <div className="record-info">
-                        <div className="patient_id">{ rec.patient_id }</div>
-                        <div className="date">{ date }</div>
-                    </div>
-                </div>
                 </div>
             )))}
 
             {showForm && <FormModal
                 show={showForm}
                 onClose={() => {setShowForm(false); setFormConfig("");}}
-                onSubmit={handleSubmitForm}
                 onCheckResult={onCheckResult}
                 recordContent={formConfig}
                 newPatiendId={patientId}
+                onSubmit={handleSubmitForm}
             />}
 
             {!showForm && !showResult && <button className="btn btn-success mb-3" onClick={() => setShowForm(true)}>

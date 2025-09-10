@@ -16,10 +16,17 @@ export default defineConfig({
       "/current_username": "http://localhost:8080",
       "/record": "http://localhost:8080",
       "/all_record": "http://localhost:8080",
+      "/all_account": "http://localhost:8080",
+      "/all_discard_record": "http://localhost:8080",
+      "/revert_delete_record": "http://localhost:8080",
+      "/apply_change_account": "http://localhost:8080",
       "/modify_record": "http://localhost:8080",
       "/apply_change_password": "http://localhost:8080",
       "/apply_reset_password": "http://localhost:8080",
       "/rebindpage": "http://localhost:8080",
+      "/system_settings": "http://localhost:8080",
+      "/apply_system_settings": "http://localhost:8080",
+      "/reset": "http://localhost:8080",
       
       "/export_data": {
         target: "http://localhost:8080",

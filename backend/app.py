@@ -1,5 +1,6 @@
 from flask import Flask, send_from_directory, session
 from flask import Flask, request, session, jsonify, send_from_directory, send_file
+from model_archive.utils_func import delete_files_in_folder, move_files_in_folders
 from collections import defaultdict
 import os, io, base64, uuid, time
 import qrcode
@@ -304,14 +305,37 @@ def modify_record():
             conn.commit()
 
     elif action == "remove":
-        cursor.execute("DELETE FROM records WHERE patient_id = ?", (form['patient_id'],))     
+
+        print("action: remove from records db and insert into records_gb...", flush=True)
+
+        cursor.execute("""
+            INSERT INTO records_gb (
+                name, gender, age, patient_id, result, notes, status, progress, message, start_timestamp, last_timestamp,
+                img1, img2, img3, img4, img5, img6, img7, img8,
+                img1_result, img2_result, img3_result, img4_result, img5_result, img6_result, img7_result, img8_result
+            )
+            SELECT
+                name, gender, age, patient_id, result, notes, status, progress, message, start_timestamp, last_timestamp,
+                img1, img2, img3, img4, img5, img6, img7, img8,
+                img1_result, img2_result, img3_result, img4_result, img5_result, img6_result, img7_result, img8_result
+            FROM records
+            WHERE patient_id = ?;
+        """, (form['patient_id'], ))
+        
         conn.commit()
 
-        cursor.execute("SELECT * FROM records_gb WHERE patient_id = ?", (form['patient_id'],))
-        row = cursor.fetchone()
+        cursor.execute("DELETE FROM records WHERE patient_id = ?", (form['patient_id'],))
+        conn.commit()
 
-        if row:
+        cursor.execute("SELECT * FROM records WHERE patient_id = ?", (form['patient_id'],))
+        rows = cursor.fetchall()
+
+        if rows:
             return jsonify({"status": "failed", "message": "delete failed", "redirect": "record"})
+
+        cursor.execute("SELECT * FROM records_gb WHERE patient_id = ?", (form['patient_id'],))
+        rows = cursor.fetchall()
+        print("rows (record_gb):", rows, flush=True)
 
     print("len(imgs_list):", len(imgs_list), flush=True)
     if len(imgs_list) == 8:
@@ -397,7 +421,314 @@ def export_data():
         download_name="records.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+# 帳號管理與系統設定頁面
+@app.route("/all_account")
+def all_account():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users")
+    rows = cursor.fetchall()
+
+    print("rows:", rows, flush=True)
+
+    account_dict = defaultdict(list)
+    for row in rows:
+        print("row:", row, flush=True)
+
+        if row['priority'] == 1:
+            role = "system manager"
+        elif row['priority'] == 0:
+            role = "resource manager"
+        else:
+            role = "tester"
+
+        current_table = {
+            "account": row['username'],
+            "name": row['name'],
+            "password": row['password'],
+            "unit": row["unit"],
+            "role": role,
+            "status": row["status"] if row["status"] else "deactivated",
+            "note": row["note"]
+        }
+
+        account_dict[row["create_timestamp"]] = current_table
     
+    conn.commit()
+    conn.close()
+
+    print("account_dict:", dict(account_dict), flush=True)
+    return jsonify({"all_account_dict": dict(account_dict)})
+
+@app.route("/apply_change_account", methods=["POST"])
+def apply_change_account():
+    data = request.get_json()
+    action = data.get("action")
+    username = data.get("account")
+    name = data.get("name")
+    password = data.get("password")
+    unit = data.get("unit")
+    role = data.get("role")
+    status = data.get("status")
+    note = data.get("note")
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE name=?", (name, ))
+    row = cursor.fetchone()
+
+    priority = -1
+
+    if action == "add":
+
+        if not row:
+            if role == "system manager":
+                priority = 1
+            elif role == "resource manager":
+                priority = 0
+            else:
+                priority = -1
+
+            cursor.execute("""
+            INSERT INTO users (
+                    username, name, password, unit, priority, status, note
+                ) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (username, name, password, unit, priority, status, note, ))
+            conn.commit()
+        else:
+            conn.close()
+            jsonify({"status": "failed", "action": action})
+
+    elif action == "save":
+
+        if role == "system manager":
+            priority = 1
+        elif role == "resource manager":
+            priority = 0
+        else:
+            priority = -1
+
+        if row:
+            cursor.execute("""
+                UPDATE users SET username = ?, password = ?, unit = ?, priority = ?, status = ?, note = ? WHERE name=?
+                """, (username, password, unit, priority, status, note, name,))
+            conn.commit()
+        else:
+            conn.close()
+            return jsonify({"status": "failed", "action": action})
+        
+    elif action == "delete":
+        cursor.execute("SELECT * FROM users WHERE name=?", (name, ))
+        row = cursor.fetchone()
+
+        if row:
+            cursor.execute("DELETE FROM users WHERE name=?", (name,))
+            conn.commit()
+        else:
+            conn.close()
+            return jsonify({"status": "failed", "action": action})
+    
+    conn.close()
+    return jsonify({"status": "ok", "action": action})
+
+@app.route("/system_settings")
+def system_settings():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM sys_settings WHERE id=1
+    """)
+    row = cursor.fetchone()
+
+    print("row:", row, flush=True)
+
+    if row:
+        expire_time = row["expire_time"]
+    else:
+        expire_time = 600
+    
+    conn.commit()
+    conn.close()
+
+    return jsonify({"expire_time": expire_time})
+
+@app.route("/apply_system_settings", methods=["POST"])
+def apply_system_settings():
+    data = request.get_json()
+    expire_time = data.get("expireTime")
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    print("expire_time:", expire_time, flush=True)
+
+    cursor.execute("""
+        UPDATE sys_settings SET expire_time=? WHERE id=1
+    """, (expire_time, ))
+
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+@app.route("/reset")
+def reset():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    print("reset begin", flush=True)
+    cursor.execute('''
+        DROP TABLE IF EXISTS sys_settings;
+    ''')
+    conn.commit()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sys_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            expire_time INTEGER DEFAULT 600
+        )
+    ''')
+    conn.commit()
+
+    cursor.execute("""
+        INSERT INTO sys_settings (id, expire_time) VALUES (1, 600)
+    """)
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+# 垃圾桶頁面
+@app.route('/all_discard_record')
+def all_discard_record():
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM records_gb ORDER BY last_timestamp DESC")
+    rows = cursor.fetchall()
+
+    conn.commit()
+    conn.close()
+
+    grouped = defaultdict(list)
+
+    for row in rows:
+        start_date_display = datetime_convert(row['start_timestamp'], "sec")
+        last_date_display = datetime_convert(row['last_timestamp'], "date")
+
+        current_table = {
+            'name': session['name'],
+            'gender': row['gender'],
+            'age': row['age'],
+            'patient_id': row['patient_id'],
+            'time': start_date_display,  # 原始 timestamp 可用於排序
+            'last_edit_time': last_date_display,
+            'notes': row['notes'],
+            'icon': 'camera',
+            'bg_class': '',
+            'pic1': row['img1'] or "/static/guide/1.png",
+            'pic2': row['img2'] or "/static/guide/2.png",
+            'pic3': row['img3'] or "/static/guide/3.png",
+            'pic4': row['img4'] or "/static/guide/4.png",
+            'pic5': row['img5'] or "/static/guide/5.png",
+            'pic6': row['img6'] or "/static/guide/6.png",
+            'pic7': row['img7'] or "/static/guide/7.png",
+            'pic8': row['img8'] or "/static/guide/8.png",
+            'pic1_r': row['img1_result'] or "/static/guide/1.png",
+            'pic2_r': row['img2_result'] or "/static/guide/2.png",
+            'pic3_r': row['img3_result'] or "/static/guide/3.png",
+            'pic4_r': row['img4_result'] or "/static/guide/4.png",
+            'pic5_r': row['img5_result'] or "/static/guide/5.png",
+            'pic6_r': row['img6_result'] or "/static/guide/6.png",
+            'pic7_r': row['img7_result'] or "/static/guide/7.png",
+            'pic8_r': row['img8_result'] or "/static/guide/8.png"
+        }
+
+        grouped[last_date_display].append(current_table)
+    
+    print("dict(grouped):", dict(grouped), flush=True)
+
+    return jsonify({"discard_grouped_records": dict(grouped)})
+
+@app.route("/revert_delete_record", methods=["POST"])
+def revert_delete_record():
+
+    form = request.get_json()
+    action = form.get("action")
+    patient_id = form.get("patient_id")
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # cursor.execute("DELETE FROM records WHERE patient_id = ?", (patient_id,))
+    # conn.commit()
+    if action == "revert":
+        cursor.execute("""
+            INSERT INTO records (
+                name, gender, age, patient_id, result, notes, status, progress, message, start_timestamp, last_timestamp, 
+                img1, img2, img3, img4, img5, img6, img7, img8,
+                img1_result, img2_result, img3_result, img4_result, img5_result, img6_result, img7_result, img8_result
+            )
+            SELECT
+                name, gender, age, patient_id, result, notes, status, progress, message, start_timestamp, last_timestamp,
+                img1, img2, img3, img4, img5, img6, img7, img8,
+                img1_result, img2_result, img3_result, img4_result, img5_result, img6_result, img7_result, img8_result
+            FROM records_gb
+            WHERE patient_id = ?;
+        """, (patient_id, ))
+
+        conn.commit()
+
+        cursor.execute("SELECT * FROM records WHERE patient_id = ?", (patient_id,))
+        conn.commit()
+        row = cursor.fetchone()
+
+        cursor.execute("DELETE FROM records_gb WHERE patient_id = ?", (patient_id,))
+        conn.commit()
+
+        cursor.execute("SELECT * FROM records_gb WHERE patient_id = ?", (patient_id,))
+        conn.commit()
+        row_gb = cursor.fetchone()
+
+        conn.close()
+
+        if row and not row_gb:
+            return jsonify({"status": "ok", "action": action})
+        else:
+            return jsonify({"status": "failed", "message": "resume failed", "action": action})
+
+    elif action == "delete_confirm":
+
+        cursor.execute("DELETE FROM records WHERE patient_id = ?", (patient_id,))
+        conn.commit()
+
+        cursor.execute("DELETE FROM records_gb WHERE patient_id = ?", (patient_id,))
+        conn.commit()
+
+        cursor.execute("SELECT * FROM records_gb WHERE patient_id = ?", (patient_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        delete_files_in_folder(f"{UPLOAD_FOLDER}/{patient_id}")
+
+        if row:
+            return jsonify({"status": "failed", "message": "delete failed", "action": action})
+        else:
+            return jsonify({"status": "ok", "action": action})
+        
 # 快速密碼變更頁面
 @app.route("/apply_change_password", methods=["POST"])
 def apply_change_password():

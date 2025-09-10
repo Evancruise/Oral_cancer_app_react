@@ -30,7 +30,7 @@ const Sidebar = ({ priority }) => {
         { path: '/record', icon: faUser, label: '個人病歷紀錄' },
         // { path: '/annotate', icon: faHistory, label: '標記平台' },
         { path: '/all_record', icon: faCalendar, label: '病歷紀錄管理', show: priority === 1 },
-        { path: '/all_account', icon: faHistory, label: '帳號管理', show: priority === 1 },
+        { path: '/all_account', icon: faHistory, label: '帳號管理與系統設定', show: priority === 1 },
         { path: '/cabin', icon: faTrash, label: '垃圾桶' },
         { path: '/change_password', icon: faKey, label: '快速密碼變更' },
         { path: '/rebindpage', icon: faLink, label: '重新綁定' },

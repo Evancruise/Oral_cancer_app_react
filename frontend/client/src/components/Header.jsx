@@ -39,7 +39,7 @@ export default function Header({title}) {
             <a href="#">{title}</a>
           </div>
           <div className="nav-right">
-            <span className="user">admin</span>
+            <span className="user">{name}</span>
             <a href="/" className="logout">登出</a>
           </div>
         </div>

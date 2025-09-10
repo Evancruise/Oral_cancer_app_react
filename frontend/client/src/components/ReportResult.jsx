@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import '../css/App.css'
 
-export default function ReportResult({show, patient_id, onClose}) {
+export default function ReportResult({show, patient_id, onClose, export_enable=true}) {
 
     if (!show) return null;
 
@@ -113,9 +113,9 @@ export default function ReportResult({show, patient_id, onClose}) {
                     <button className="btn btn-secondary" onClick={onClose}>
                     回上一頁
                     </button>
-                    <button className="btn btn-primary" onClick={export_report}>
+                    {export_enable && <button className="btn btn-primary" onClick={export_report}>
                     匯出診斷報告
-                    </button>
+                    </button>}
                 </div>
             </div>
         </>

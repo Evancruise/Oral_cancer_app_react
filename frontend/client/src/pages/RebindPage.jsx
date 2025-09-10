@@ -100,6 +100,10 @@ export default function RebindPage() {
             )}
           </div>
         </div>
+
+        <div className="footer">
+            <a href="#" style={{ textDecoration: "none", fontWeight: "800", color: "#3aa3d1" }}>Mi-tech</a> Copyright © 2019
+        </div>  
       </div>
     </div>
   );

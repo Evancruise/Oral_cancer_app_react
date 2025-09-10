@@ -4,7 +4,7 @@ import ProgessModal from './progressModal.jsx';
 import { useNavigate } from "react-router-dom";
 import '../css/App.css'
 
-export default function FormModal({ show, onClose, onSubmit, onCheckResult, recordContent, newPatiendId }) {
+export default function FormModal({ show, onClose, onCheckResult, recordContent, newPatiendId, onSubmit=null, discardPage=false, handleRevertDelete=null }) {
 
     const parts = [
         ["1", "上牙齦"],
@@ -152,6 +152,8 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
             setShowModal(true);
             return;
         }
+
+        console.log("action:", action);
         formData["action"] = action;
         formData["all_imgs"] = previewsUrl;
         console.log(formData);
@@ -288,15 +290,15 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <button type="button" id="infer" className="btn btn-secondary btn-lg" style={{ width: "48%" }} onClick={ (e) => startInference(e, formData) }>
+                  {!discardPage && <button type="button" id="infer" className="btn btn-secondary btn-lg" style={{ width: "48%" }} onClick={ (e) => startInference(e, formData) }>
                       <i className="fas fa-camera-retro"></i>開始辨識
-                  </button>
+                  </button>}
                   <button 
                       type="button" 
                       id="check_result" 
                       className="btn btn-secondary btn-lg" 
                       onClick={(e) => onCheckResult(e, formData.patient_id)} 
-                      style={{ width: "48%" }}
+                      style={{ width: discardPage == false ? "48%" : "100%" }}
                   >
                       <i className="far fa-file-alt"></i>查看辨識結果
                   </button>
@@ -306,14 +308,20 @@ export default function FormModal({ show, onClose, onSubmit, onCheckResult, reco
                 <button className="btn btn-secondary" onClick={onClose}>
                   回上一頁
                 </button>
-                {action == "edit" && <button className="btn btn-primary" onClick={(e) => handleSave("edit", e)}>
+                {!discardPage && action == "edit" && <button className="btn btn-primary" onClick={(e) => handleSave("edit", e)}>
                   儲存
                 </button>}
-                {action == "edit" && <button className="btn btn-primary" onClick={(e) => handleSave("remove", e)}>
+                {!discardPage && action == "edit" && <button className="btn btn-primary" onClick={(e) => handleSave("remove", e)}>
                   刪除
                 </button>}
-                {action == "add" && <button className="btn btn-primary" onClick={(e) => handleSave("add", e)}>
+                {!discardPage && action == "add" && <button className="btn btn-primary" onClick={(e) => handleSave("add", e)}>
                   新增
+                </button>}
+                {discardPage && <button className="btn btn-primary" onClick={() => handleRevertDelete(formData, "revert")}>
+                  回復
+                </button>}
+                {discardPage && <button className="btn btn-primary" onClick={() => handleRevertDelete(formData, "delete_confirm")}>
+                  確認刪除
                 </button>}
               </div>
           </div>
