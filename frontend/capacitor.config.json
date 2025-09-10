@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.aiconfig",
+  "appName": "AI Config",
+  "webDir": "frontend/dist",
+  "bundledWebRuntime": false
+}
