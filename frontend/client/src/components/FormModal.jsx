@@ -59,7 +59,6 @@ export default function FormModal({ show, onClose, onCheckResult, recordContent,
 
             console.log("previewsUrl:", previewsUrl);
         })
-        .catch(err => console.error("Fetch /upload_imgs 失敗:", err));
     }, []);
 
     const handleChange = (e) => {
