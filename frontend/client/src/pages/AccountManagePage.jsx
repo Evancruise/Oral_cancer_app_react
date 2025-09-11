@@ -103,18 +103,14 @@ export default function AccountManagePage() {
             return res.json();
         })
         .then((data) => {
-            console.log("data.all_account_dict:", data.all_account_dict);
             const accountsArray = Object.entries(data.all_account_dict).map(([key, value]) => ({
                 id: key,
                 ...value
             }));
 
-            console.log("accountsArray:", accountsArray);
-
             setAllAccounts(accountsArray);
             setDisplayed(accountsArray);
 
-            console.log("allAccounts:", allAccounts);
             renderTable(1, accountsArray);
         })
         .catch((err) => {
@@ -130,15 +126,31 @@ export default function AccountManagePage() {
         }));
     };
 
-    const handleSave = async (action) => {
+    const handleSave = async (action, selectedAccount=null) => {
+        let res = null;
 
-        const payload = { ...formData, action };
+        if (selectedAccount != null) {
+            const payload = { ...selectedAccount, action };
+            console.log("payload:", payload);
+            console.log("selectedAccount:", selectedAccount);
 
-        const res = await fetch("/apply_change_account", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
+            res = await fetch("/apply_change_account", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+        }
+        else {
+            const payload = { ...formData, action };
+
+            console.log("payload:", payload);
+
+            res = await fetch("/apply_change_account", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+        }   
 
         const result = await res.json();
         console.log(result);
@@ -391,7 +403,7 @@ export default function AccountManagePage() {
                                 type="button" 
                                 className="btn btn-secondary" 
                                 data-bs-dismiss="modal" 
-                                onClick={() => handleSave("delete")}>
+                                onClick={() => handleSave("delete", selectedAccount)}>
                                 刪除
                             </button>
                         </div>

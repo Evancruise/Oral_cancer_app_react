@@ -27,6 +27,8 @@ export default defineConfig({
       "/system_settings": "http://localhost:8080",
       "/apply_system_settings": "http://localhost:8080",
       "/reset": "http://localhost:8080",
+      "/countdown_time": "http://localhost:8080",
+      "reset_password": "http://localhost:8080",
       
       "/export_data": {
         target: "http://localhost:8080",

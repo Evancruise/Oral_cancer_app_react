@@ -2,7 +2,7 @@ from flask import Flask, send_from_directory, session
 from flask import Flask, request, session, jsonify, send_from_directory, send_file
 from model_archive.utils_func import delete_files_in_folder, move_files_in_folders
 from collections import defaultdict
-import os, io, base64, uuid, time
+import os, io, base64, uuid, time, re
 import qrcode
 import datetime
 from datetime import date
@@ -12,6 +12,7 @@ import sqlite3
 from flask_cors import CORS
 from zoneinfo import ZoneInfo
 import pandas as pd
+from functools import wraps
 from model_archive.func_db import init_db
 
 from werkzeug.utils import secure_filename
@@ -33,6 +34,7 @@ EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 new_patient_id = "0001"
+user_login_status = {}
 
 UPLOAD_FOLDER = os.path.join(app.root_path, "tmp", "uploads")
 RESULT_FOLDER = os.path.join(app.root_path, "tmp", "results")
@@ -126,8 +128,14 @@ def login_redirect():
             conn.close()
 
             return {"status": "success", "message": "none", "redirect": "homepage"}
-        elif "password" in session and password == session["password"]:
+        elif is_valid_email(username) and "password" in session and password == session["password"]:
+            token = generate_jwt(username)
+
             new_session_id = str(uuid.uuid4())
+            session["status"] = "login"
+            session["token"] = token
+            session["username"] = username
+            session["password"] = password
             session["user_id"] = new_session_id
 
             conn = sqlite3.connect(DB_PATH)
@@ -143,11 +151,14 @@ def login_redirect():
             session["cur_state"] = "activated"
             conn.commit()
             conn.close()
-            return {"status": "success", "message": "none", "redirect": "homepage"}        
-    else:
+
+            return {"status": "success", "message": "none", "redirect": "homepage"}  
+        else:
+            return {"status": "failed", "message": "format error", "redirect": "homepage"} 
+    elif not name:
         return {"status": "error", "message": "Name empty", "redirect": "homepage"} 
     
-    return {"status": "error", "message": "帳號或密碼錯誤"}
+    return {"status": "error", "message": "Wrong username/pwd"}
 
 @app.route("/login", methods=["GET"])
 def login_api():
@@ -171,8 +182,70 @@ def login_api():
         "session_id": session_id
     })
 
+@app.route("/logout")
+def logout():
+    del user_login_status[session["username"]]
+    session["status"] = "not login"
+    return jsonify({"redirect": "/"})
+
+def refresh_timer(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        name = session["username"]
+        if name in user_login_status:
+            del user_login_status[name]
+            print(f"[refresh_timer] 更新 {name} 的時間")
+        return f(*args, **kwargs)
+    return wrapper
+
+@app.route("/countdown_time")
+def countdown_time():
+    # 假設這個時間是從 DB 或記憶體算出來的
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT expire_time FROM sys_settings WHERE id=1
+    """)
+    row = cursor.fetchone()
+
+    conn.commit()
+    conn.close()
+
+    if "username" not in session:
+        return jsonify({"remaining_time": 0, "is_expired": True, "is_valid": False})
+
+    name=session["username"]
+
+    # 第一次觸發，紀錄開始時間
+    if name not in user_login_status:
+        user_login_status[name] = int(time.time())
+
+    if row:
+        expire_time = row[0]
+        now = int(time.time())
+
+        if user_login_status[name] != None:
+            elapsed = now - user_login_status[name] # COUNTDOWN_START = int(time.time())
+        else:
+            elapsed = now
+
+        remaining_time = expire_time - elapsed
+    else:
+        del user_login_status[name]
+        return jsonify({"remaining_time": remaining_time, "is_expired": True, "is_valid": False})
+
+    if remaining_time <= 0:
+        user_login_status[name] = None
+        del user_login_status[name]
+        return jsonify({"remaining_time": remaining_time, "is_expired": True, "is_valid": True})
+    
+    return jsonify({"remaining_time": remaining_time, "is_expired": False, "is_valid": True})
+
 # 登入首頁頁面
 @app.route("/home_page")
+@refresh_timer
 def home_page():
     name = session["name"]
     username = session["username"]
@@ -180,6 +253,7 @@ def home_page():
 
 # 個人病歷紀錄頁面
 @app.route("/record", methods=["GET"])
+@refresh_timer
 def record():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -365,6 +439,7 @@ def modify_record():
 
 # 病歷紀錄管理頁面
 @app.route("/all_record")
+@refresh_timer
 def all_record():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -403,6 +478,7 @@ def all_record():
     return jsonify({"grouped_records": record_dict, "default_date": today_timestamp + "~" + today_timestamp})
 
 @app.route("/export_data", methods=["POST"])
+@refresh_timer
 def export_data():
     records = request.json  # React 傳進來的 data
     for item in records:
@@ -424,6 +500,7 @@ def export_data():
 
 # 帳號管理與系統設定頁面
 @app.route("/all_account")
+@refresh_timer
 def all_account():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -474,6 +551,8 @@ def apply_change_account():
     role = data.get("role")
     status = data.get("status")
     note = data.get("note")
+
+    print("action:", action, flush=True)
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -526,6 +605,7 @@ def apply_change_account():
     elif action == "delete":
         cursor.execute("SELECT * FROM users WHERE name=?", (name, ))
         row = cursor.fetchone()
+        print("name:", name, flush=True)
 
         if row:
             cursor.execute("DELETE FROM users WHERE name=?", (name,))
@@ -610,6 +690,7 @@ def reset():
 
 # 垃圾桶頁面
 @app.route('/all_discard_record')
+@refresh_timer
 def all_discard_record():
 
     conn = sqlite3.connect(DB_PATH)
@@ -731,6 +812,7 @@ def revert_delete_record():
         
 # 快速密碼變更頁面
 @app.route("/apply_change_password", methods=["POST"])
+@refresh_timer
 def apply_change_password():
     form = request.get_json()
     old_password = form["old_password"]
@@ -762,6 +844,7 @@ def apply_reset_password():
 
 # 重新綁定頁面
 @app.route("/rebind-qr")
+@refresh_timer
 def rebind_qr():
 
     token = str(uuid.uuid4())
@@ -843,6 +926,7 @@ def send_email_with_token(email, token):
     # resend.Emails.send(data)
 
 @app.route("/upload", methods=["POST"])
+@refresh_timer
 def upload_file():
 
     file = request.files["file"]
@@ -935,6 +1019,15 @@ def datetime_convert(stimestamp, display_style="date"):
         date_display = f"{datetime_str_prefix}（{chinese_weekday}）{datetime_str_suffix}"
 
     return date_display
+
+def is_valid_email(email: str) -> bool:
+    """
+    判斷字串是否為有效的 email 格式
+    :param email: 要檢查的字串
+    :return: True (符合 email 格式), False (不符合)
+    """
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
 def retrieve_priority(username):
 

@@ -83,11 +83,12 @@ export default function HistoryManagePage() {
         return result;
     }
 
-    function renderTable(page = 1) {
+    function renderTable(page = 1, input_data = "") {
         console.log("allRecord:", allRecord);
         console.log("dateRange:", dateRange);
 
-        const data = allRecord.filter(r =>
+        const all_data = input_data ?? allAccounts;
+        const data = all_data.filter(r =>
             (dateRange ? isWithinDateRange(r.uploaded.split(" ")[0], dateRange) : true) &&
             (uploader !== "all" ? r.user === uploader : true) &&
             (status !== "all" ? r.status === status : true) &&
@@ -125,10 +126,10 @@ export default function HistoryManagePage() {
                 ...value
             }));
 
-            console.log("recordsArray:", recordsArray);
-
             setAllRecord(recordsArray);
-            renderTable(1); // ✅ 初始化顯示第一頁
+            setDisplayed(recordsArray);
+
+            renderTable(1, recordsArray);
         })
         .catch((err) => {
             console.error("Fetch /all_record 失敗:", err);

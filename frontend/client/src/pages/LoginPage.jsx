@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Modal from "../components/showModal.jsx";
 
@@ -29,11 +30,26 @@ function LoginPage() {
             // window.location.href = "/" + data.redirect;
             navigate("/" + data.redirect);
         } else {
+
+          if (data.message == "Wrong username/pwd") {
             setModalConfig({
                 title: "登入失敗",
                 message: "帳號或密碼錯誤，請再試一次！"
             });
             setShowModal(true);
+          } else if (data.message == "format error") {
+            setModalConfig({
+                title: "登入失敗",
+                message: "帳號格式錯誤，請再試一次！"
+            });
+            setShowModal(true);
+          } else if (data.message == "Name empty") {
+            setModalConfig({
+                title: "登入失敗",
+                message: "使用者姓名欄位不能為空，請再試一次！"
+            });
+            setShowModal(true);
+          }
         }
     }
 
@@ -56,14 +72,14 @@ function LoginPage() {
           <input type="text" id="name" name="name" autoComplete="name" onChange={(e) => setName(e.target.value)} required />
 
           <label htmlFor="username">帳號：</label>
-          <input type="text" id="username" name="username" autoComplete="username" onChange={(e) => setUserName(e.target.value)} required />
+          <input type="text" id="username" name="username" autoComplete="username" placeholder="example@gmail.com" onChange={(e) => setUserName(e.target.value)} required />
 
           <label htmlFor="password">密碼：</label>
           <input type="password" id="password" name="password" autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} required />
 
           <button type="submit" onClick={login_redirect}>登入</button>
           <br/>
-          <a href="/reset_password"> 忘記密碼? </a>
+          <Link to="/reset_password">忘記密碼?</Link>
 
           <div className="footer">
               <a href="#" style={{ textDecoration: "none", fontWeight: "800", color: "#3aa3d1" }}>Mi-tech</a> Copyright © 2019

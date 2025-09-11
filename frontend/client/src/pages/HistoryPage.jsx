@@ -116,9 +116,11 @@ export default function HistoryPage() {
                 onSubmit={handleSubmitForm}
             />}
 
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
             {!showForm && !showResult && <button className="btn btn-success mb-3" onClick={() => setShowForm(true)}>
                 + 新增紀錄
             </button>}
+            </div>
 
             {showResult && <ReportResult 
                 show={showResult}
